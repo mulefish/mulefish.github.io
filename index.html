@@ -1,24 +1,137 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Chart - SVG</title>
 <style>
-.indent { 
-  margin-left:20px;
-}
-
-.img { 
-  width: 80vw;
-  height: auto;
-  border:5px solid #000000;
-} 
+    svg {
+        border: 1px solid #ddd;
+        background-color: #f9f9f9;
+    }
 </style>
- 
 </head>
 <body>
-<br/>
-<div class='indent'>
-Clustering a product catalog: A screen shot of a datavis featuring word embeddings, KNN, SciKit + Spacy.<br/>Presentation using html canvas and simple html. 
-</div>
+
+<div id="viewport"></div>
 <hr/>
-<img class='indent' border='1' src="productspace.png" alt="product space" width="1000"></img> 
+<fieldset>
+    <label>term defintions used here</label>
+<ul>
+	<li>
+		First 30% of each dimension clipped in this matrix graph because they held no information
+	</li> 
+	<li>
+		Raw data from a few ChatGtp queries
+	</li> 
+	<li>
+		The line to the right ( positive ) or left ( negative ) of each dot = growth percent during that leader's time in office 
+	</li> 
+    <li>
+        Here, up is 'socially' liberal and 'down' is more conservative. 
+    </li>
+    <li>
+        Here, right is 'fiscally conversative'
+    </li>
+    <li>
+        <b>Fiscal conservatism</b> is focused on responsible, restrained government spending and a limited role of government in the economy. Fiscal conservatives believe that sound economic policy minimizes debt and prevents excessive taxation or government intervention in the free market. Key aspects of fiscal conservatism include:
+    </li>
+    <li>
+        <b>Social conservatism</b> generally emphasizes traditional values, cultural norms, and moral codes that guide societal behavior. Social conservatives often support policies that maintain established customs, institutions, and cultural traditions, which they believe provide societal stability. Common themes associated with social conservatism include:    </li>
+</ul>
+</fieldset>
+<script>
+    const W = window.innerWidth * 0.9; // 90% of the window width for SVG
+    const H = window.innerHeight * 0.65; // 65% of the window height for SVG
+    const padding = 40; // Padding for labels
+
+    // Create SVG element
+    const svg = `<svg id="chartSVG" width="${W + padding * 2}" height="${H + padding * 2}"></svg>`;
+    document.getElementById("viewport").innerHTML = svg;
+
+    const svgElement = document.getElementById("chartSVG");
+
+    const japanPmData = [
+        { Name: "Eisaku Sat┼ì", Start: 1964, End: 1972, SocialLiberalism: 40, FiscalConservatism: 70, EconomicGrowth: 7.0 },
+        { Name: "Kakuei Tanaka", Start: 1972, End: 1974, SocialLiberalism: 50, FiscalConservatism: 65, EconomicGrowth: 5.0 },
+        { Name: "Takeo Miki", Start: 1974, End: 1976, SocialLiberalism: 55, FiscalConservatism: 60, EconomicGrowth: 3.0 },
+        { Name: "Takeo Fukuda", Start: 1976, End: 1978, SocialLiberalism: 45, FiscalConservatism: 75, EconomicGrowth: 4.0 },
+        { Name: "Masayoshi ┼îhira", Start: 1978, End: 1980, SocialLiberalism: 50, FiscalConservatism: 70, EconomicGrowth: 4.5 },
+        { Name: "Yasuhiro Nakasone", Start: 1982, End: 1987, SocialLiberalism: 40, FiscalConservatism: 80, EconomicGrowth: 5.0 },
+        { Name: "Shinz┼ì Abe", Start: 2012, End: 2020, SocialLiberalism: 55, FiscalConservatism: 75, EconomicGrowth: 1.5 },
+        { Name: "Yoshihide Suga", Start: 2020, End: 2021, SocialLiberalism: 60, FiscalConservatism: 70, EconomicGrowth: -4.0 },
+        { Name: "Fumio Kishida", Start: 2021, End: null, SocialLiberalism: 65, FiscalConservatism: 65, EconomicGrowth: null }
+    ];
+
+    const usPresidentsData = [
+
+        { Name: "Richard Nixon", Start: 1969, End: 1974, SocialLiberalism: 40, FiscalConservatism: 70, EconomicGrowth: 2.5 },
+        { Name: "Gerald Ford", Start: 1974, End: 1977, SocialLiberalism: 45, FiscalConservatism: 65, EconomicGrowth: -0.5 },
+        { Name: "Jimmy Carter", Start: 1977, End: 1981, SocialLiberalism: 60, FiscalConservatism: 55, EconomicGrowth: 3.0 },
+        { Name: "Ronald Reagan", Start: 1981, End: 1989, SocialLiberalism: 35, FiscalConservatism: 85, EconomicGrowth: 3.5 },
+        { Name: "George H.W. Bush", Start: 1989, End: 1993, SocialLiberalism: 40, FiscalConservatism: 80, EconomicGrowth: 2.0 },
+        { Name: "Bill Clinton", Start: 1993, End: 2001, SocialLiberalism: 70, FiscalConservatism: 65, EconomicGrowth: 4.0 },
+        { Name: "Barack Obama", Start: 2009, End: 2017, SocialLiberalism: 75, FiscalConservatism: 60, EconomicGrowth: 2.5 },
+        { Name: "Donald Trump", Start: 2017, End: 2021, SocialLiberalism: 50, FiscalConservatism: 85, EconomicGrowth: 2.2 },
+        { Name: "Joe Biden", Start: 2021, End: null, SocialLiberalism: 80, FiscalConservatism: 55, EconomicGrowth: null }
+    ];
+
+    const minX = 30, maxX = 100; // Fiscal Conservatism range, skipping first 30%
+    const minY = 30, maxY = 100; // Social Liberalism range, skipping first 30%
+
+    // Draw grid with labels
+    function drawGrid() {
+        for (let i = 0; i <= 10; i++) {
+            const x = padding + i * (W / 10);
+            const y = padding + H - i * (H / 10);
+            const xLabel = Math.round(minX + i * (maxX - minX) / 10);
+            const yLabel = Math.round(minY + i * (maxY - minY) / 10);
+
+            // Vertical lines
+            svgElement.innerHTML += `<line x1="${x}" y1="${padding}" x2="${x}" y2="${padding + H}" stroke="#ddd"/>`;
+            svgElement.innerHTML += `<text x="${x - 10}" y="${padding + H + 20}" font-size="12" fill="#000">${xLabel}</text>`;
+
+            // Horizontal lines
+            svgElement.innerHTML += `<line x1="${padding}" y1="${y}" x2="${padding + W}" y2="${y}" stroke="#ddd"/>`;
+            if (i !== 0) svgElement.innerHTML += `<text x="${padding - 30}" y="${y + 4}" font-size="12" fill="#000">${yLabel}</text>`;
+        }
+
+        // Axis titles
+        svgElement.innerHTML += `<text x="${padding + W / 2 - 60}" y="${padding + H + 30}" font-size="14" fill="#000">Fiscal Conservatism (30-100)</text>`;
+        svgElement.innerHTML += `<text x="${padding - 30}" y="${padding + H / 2}" font-size="14" fill="#000" transform="rotate(-90 ${padding - 30},${padding + H / 2})">Social Liberalism (30-100)</text>`;
+    }
+
+    // Draw data points and labels
+    function drawDataPoint(data, color) {
+        data.forEach(d => {
+            const x = padding + ((d.FiscalConservatism - minX) / (maxX - minX)) * W;
+            const y = padding + H - ((d.SocialLiberalism - minY) / (maxY - minY)) * H;
+            const label = d.EconomicGrowth == null ? `${d.Name} : ${d.Start} : tbd` : `${d.Name} : ${d.Start} : growth ${d.EconomicGrowth}%`;
+
+            // Draw circle
+            svgElement.innerHTML += `<circle cx="${x}" cy="${y}" r="5" fill="${color}"/>`;
+
+            // Economic growth line
+            if (d.EconomicGrowth !== null) {
+                const lineLength = d.EconomicGrowth * (W / 50);
+                svgElement.innerHTML += `<line x1="${x}" y1="${y}" x2="${x + lineLength}" y2="${y}" stroke="${color}" stroke-width="2"/>`;
+            }
+
+            // Draw name and % growth
+            svgElement.innerHTML += `<text x="${x + 5}" y="${y + (color === "brown" ? 12 : -8)}" font-size="10" fill="${color}">${label}</text>`;
+        });
+    }
+
+    // Main drawing function
+    function drawChart() {
+        drawGrid();
+        drawDataPoint(japanPmData, "brown");
+        drawDataPoint(usPresidentsData, "blue");
+    }
+
+    // Initialize chart
+    drawChart();
+</script>
+
 </body>
 </html>
